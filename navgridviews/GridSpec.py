@@ -6,7 +6,6 @@ from navgridviews.AbstractView import AbstractView
 
 
 class GridSpec(AbstractView):
-
     MAX_PHI_DIM = 3
     CellParams = namedtuple("CellParams", "vmin vmax xlim ylim xticks yticks spines", 
                             defaults=[None, None, None, None, [], [], False])

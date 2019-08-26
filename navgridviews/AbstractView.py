@@ -9,6 +9,5 @@ class AbstractView:
     def add_trajectories(self, trajectories):
         raise NotImplementedError
     
-    def render(self, data):
+    def render(self):
         raise NotImplementedError
-        
