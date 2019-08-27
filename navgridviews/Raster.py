@@ -107,6 +107,26 @@ def get_discrete_cmap(cmap, discrete_levels):
     cmap = mplotcolors.ListedColormap(cell_colors, N=n_unique)
     return cmap
 
+def get_css4_colors(N, shuffled=False):
+
+    colors = list(mplotcolors.CSS4_COLORS.keys())
+
+    if shuffled:
+        np.random.shuffle(colors)
+
+    if N == 0:
+        return None
+    elif N < 0:
+        return colors
+
+    times = int(np.ceil(N / len(colors)))
+
+    if times == 1:
+        return colors[:N]
+    else:
+        colors_tiled = colors * times
+        return colors_tiled[:N]
+
 class Raster(AbstractView):
 
     def __init__(self, data, ax=None, coord_sys="rowcol"):
@@ -132,7 +152,7 @@ class Raster(AbstractView):
         if self.coord_sys == "cartesian":
             self.render_img = self.render_img[::-1]
 
-    def add_trajectory(self, trajectory, with_arrow=True):
+    def add_trajectory(self, trajectory, color='white', with_arrow=True, arrow_props=dict()):
         x_list, y_list, _ = [], [], []
         for (x_prime, y_prime, a) in trajectory:
             x, y = self.interpret_coord_sys(x_prime, y_prime)
@@ -143,14 +163,16 @@ class Raster(AbstractView):
             else:  # self.coord_sys == "cartesian":
                 y_list.append(self.H - y - 1)
         if with_arrow:
-            self.draw_path_with_arrows(x_list, y_list)
+            self.draw_path_with_arrows(x_list, y_list, color, arrow_props)
         else:
-            self.draw_path(x_list, y_list)
+            self.draw_path(x_list, y_list, color)
         return self
 
-    def add_trajectories(self, trajectories, with_arrow=True):
-        for traj in trajectories:
-            self.add_trajectory(traj, with_arrow)
+    def add_trajectories(self, trajectories, with_arrow=True, arrow_props=dict()):
+
+        traj_color_list = get_css4_colors(len(trajectories), True)
+        for i, traj in enumerate(trajectories):
+            self.add_trajectory(traj, traj_color_list[i], with_arrow, arrow_props)
         return self
 
     def render(self, cmap=cm.viridis):
@@ -158,15 +180,15 @@ class Raster(AbstractView):
         self.im = self.ax.imshow(self.render_img, cmap=cmap)
         return self
 
-    def draw_path(self, x_list, y_list):
-        return plt.plot(x_list, y_list)
+    def draw_path(self, x_list, y_list, color):
+        return plt.plot(x_list, y_list, color=color)
 
-    def draw_path_with_arrows(self, x_list, y_list):
+    def draw_path_with_arrows(self, x_list, y_list, color, arrow_props):
         if len(x_list) >= 2:
             for i in range(len(x_list)-1):
                 x, y = x_list[i], y_list[i]
                 xp, yp = x_list[i+1], y_list[i+1]
-                self.ax.annotate("", xy=(xp, yp), xytext=(x, y), arrowprops=dict(arrowstyle="->"))
+                self.ax.annotate("", xy=(xp, yp), xytext=(x, y), arrowprops={"color":color, "arrowstyle": "->", **arrow_props})
         return self
 
     def interpret_coord_sys(self, x, y):
