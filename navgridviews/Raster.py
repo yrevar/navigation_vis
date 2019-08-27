@@ -56,11 +56,11 @@ def flatten_to_raster(data):
              <---------------W--------------->
               ------- ------- ------- -------
          ^   |       |       |       |       |
-         |   Y   0   |   1   |  ...  |   nX  |
+         |   Y   1   |   2   |  ...  |   nX  |
          |   |       |       |       |       |
          |    ---X--- ------- ------- -------
          |   |       |       |       |       |
-         |   |   1   |       |       |       |
+         |   |   2   |       |       |       |
          |   |       |       |       |       |
          H    ------- ------- ------- -------
          |   |       |       |       |       |
@@ -109,61 +109,97 @@ def get_discrete_cmap(cmap, discrete_levels):
 
 class Raster(AbstractView):
 
-    def __init__(self, data):
-        self.data = data
-        self.raster, self.nY, self.nX = flatten_to_raster(data)
-        self.H, self.W, self.C = self.raster.shape
-        self.Y, self.X = self.H // self.nY, self.W // self.nX # guaranteed to be ints
-        self.render_img = self.raster[:, :, 0] if self.raster.shape[2] == 1 else self.raster
-        self.ax = None
+    def __init__(self, data, ax=None, coord_sys="rowcol"):
+        self.coord_sys = coord_sys
+        if ax is None:
+            self.fig, self.ax = plt.subplots(1, 1)
+        else:
+            self.ax = ax
+        if self.coord_sys == "rowcol":
+            self.x_origin, self.y_origin = 0, 0
+        elif self.coord_sys == "cartesian":
+            self.x_origin, self.y_origin = 1, 1
+        else:
+            raise Exception("coord system {} not supported!".format(self.coord_sys))
+        self.update_data(data)
 
     def update_data(self, data):
         self.data = data
+        self.raster, self.nY, self.nX = flatten_to_raster(data)
+        self.H, self.W, self.C = self.raster.shape
+        self.Y, self.X = self.H // self.nY, self.W // self.nX  # guaranteed to be ints
+        self.render_img = self.raster[:, :, 0] if self.raster.shape[2] == 1 else self.raster
+        if self.coord_sys == "cartesian":
+            self.render_img = self.render_img[::-1]
 
     def add_trajectory(self, trajectory):
-        raise NotImplementedError
+        x_list, y_list, a_list = [], [], []
+        for (x_prime, y_prime, a) in trajectory:
+            x, y = self.interpret_coord_sys(x_prime, y_prime)
+            x_list.append(x)
+            y_list.append(y)
+        self.draw_path_with_arrows(x_list, y_list)
+        return self
 
     def add_trajectories(self, trajectories):
-        raise NotImplementedError
+        for traj in trajectories:
+            self.add_trajectory(traj)
+        return self
 
-    def render(self, cmap=cm.viridis, ax=None):
-
+    def render(self, cmap=cm.viridis):
         self.cmap = cmap
-        if ax is None:
-            if self.ax is None:
-                self.fig, self.ax = plt.subplots(1, 1)
-        else:
-            self.ax = ax
         self.im = self.ax.imshow(self.render_img, cmap=cmap)
         return self
 
-    def ticks(self, xticks=True, yticks=True, minor=True, coord_sys="rowcol"):
-        show_minor_ticks = False
-        # one image
-        if self.nX == 1 and self.nY == 1:
-            xtick_locs = np.arange(0, self.W, 1) - 0.5
-            ytick_locs = np.arange(1, self.H+1, 1) - 0.5
+    def draw_path(self, x_list, y_list):
+        return plt.plot(x_list, y_list)
+
+    def draw_path_with_arrows(self, x_list, y_list):
+        if len(x_list) >= 2:
+            for i in range(len(x_list)-1):
+                x, y = x_list[i], y_list[i]
+                xp, yp = x_list[i+1], y_list[i+1]
+                # invert_yaxis has no effect on annotations y coordinates
+                if self.coord_sys == "rowcol":
+                    star_x, start_y = x, y
+                    end_x, end_y = xp, yp
+                else: # self.coord_sys == "cartesian":
+                    star_x, start_y = x, self.H - y - 1
+                    end_x, end_y = xp, self.H - yp - 1
+                self.ax.annotate("", xy=(end_x, end_y), xytext=(star_x, start_y), arrowprops=dict(arrowstyle="->"))
+        return self
+
+    def interpret_coord_sys(self, x, y):
+        if self.coord_sys == "rowcol":
+            return x, y
+        elif self.coord_sys == "cartesian":
+            return x - 1, self.H - (y - 1) - 1
         else:
+            raise Exception("coord system {} not supported!".format(self.coord_sys))
+
+    def ticks(self, xticks=True, yticks=True, minor=True):
+
+        show_minor_ticks = False
+        if self.coord_sys == "cartesian":
+            self.ax.invert_yaxis()
+        if self.nX == 1 and self.nY == 1:
+            # one image
+            xtick_locs = np.arange(0, self.W, 1) - 0.5
+            ytick_locs = np.arange(0, self.H, 1) - 0.5
+        else:
+            # image grid
             # xtick_locs = np.arange(0, self.W, self.X) + self.X // 2 - (0.5 if self.X % 2 == 0 else 0)
             # ytick_locs = np.arange(0, self.H, self.Y) + self.Y // 2 - (0.5 if self.Y % 2 == 0 else 0)
             xtick_locs = np.arange(0, self.W, self.X) - 0.5
-            ytick_locs = np.arange(self.Y, self.H+self.Y, self.Y) - 0.5
+            ytick_locs = np.arange(0, self.H, self.Y) - 0.5
             xminor_tick_locs = np.arange(0, self.W, 1)
             yminor_tick_locs = np.arange(0, self.H, 1)
             show_minor_ticks = True
 
-        if coord_sys == "rowcol":
-            x_origin, y_origin = 0, 0
-        elif coord_sys == "cartesian":
-            x_origin, y_origin = 1, 1
-            ytick_locs = ytick_locs[::-1]
-        else:
-            raise Exception("coord system {} not supported!".format(coord_sys))
-
         if xticks:
             # set major ticks
             self.ax.set_xticks(xtick_locs, minor=False)
-            self.ax.set_xticklabels([str(tick_idx + x_origin) for tick_idx, tick_val in enumerate(xtick_locs)], minor=False)
+            self.ax.set_xticklabels([str(tick_idx + self.x_origin) for tick_idx, tick_val in enumerate(xtick_locs)], minor=False)
             # set minor ticks
             if minor and show_minor_ticks:
                 self.ax.set_xticks(xminor_tick_locs, minor=True)
@@ -171,7 +207,7 @@ class Raster(AbstractView):
         if yticks:
             # set major ticks
             self.ax.set_yticks(ytick_locs, minor=False)
-            self.ax.set_yticklabels([str(tick_idx + y_origin) for tick_idx, tick_val in enumerate(ytick_locs)], minor=False)
+            self.ax.set_yticklabels([str(tick_idx + self.y_origin) for tick_idx, tick_val in enumerate(ytick_locs)], minor=False)
             # set minor ticks
             if minor and show_minor_ticks:
                 self.ax.set_yticks(yminor_tick_locs, minor=True)
