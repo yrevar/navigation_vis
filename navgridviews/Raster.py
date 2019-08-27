@@ -114,6 +114,7 @@ class Raster(AbstractView):
         self.raster, self.nY, self.nX = flatten_to_raster(data)
         self.H, self.W, self.C = self.raster.shape
         self.Y, self.X = self.H // self.nY, self.W // self.nX # guaranteed to be ints
+        self.render_img = self.raster[:, :, 0] if self.raster.shape[2] == 1 else self.raster
         self.ax = None
 
     def update_data(self, data):
@@ -133,8 +134,7 @@ class Raster(AbstractView):
                 self.fig, self.ax = plt.subplots(1, 1)
         else:
             self.ax = ax
-        render_img = self.raster[:,:,0] if self.raster.shape[2] == 1 else self.raster
-        self.im = self.ax.imshow(render_img, cmap=cmap)
+        self.im = self.ax.imshow(self.render_img, cmap=cmap)
         return self
 
     def ticks(self, xticks=True, yticks=True, minor=True, coord_sys="rowcol"):
@@ -202,6 +202,21 @@ class Raster(AbstractView):
         self.cb_ax = divider.append_axes('right', size='5%', pad=0.05)
         self.cbar = fig.colorbar(self.im, ticks=ticks, cax=self.cb_ax)
         self.cbar.set_ticklabels(ticklabels)
+        return self
+
+    def add_text(self, fmt="%d", color=lambda elem: "white"):
+        # Loop over data dimensions and create text annotations.
+        for i in range(self.render_img.shape[0]):
+            for j in range(self.render_img.shape[1]):
+                if self.C == 1:
+                    text =  format(self.render_img[i, j], fmt)
+                else:
+                    text = ", ".join([format(n, fmt) for n in self.render_img[i, j, :]])
+                self.ax.text(j, i, text,
+                               ha="center",
+                               va="center",
+                               color=color(self.render_img[i,j]))
+        return self
 
     def __call__(self, *args, **kwargs):
         return self.raster
