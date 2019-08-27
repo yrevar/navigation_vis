@@ -1,5 +1,6 @@
 import numpy as np
-from matplotlib import cm as cm, pyplot as plt
+from matplotlib import cm as cm, pyplot as plt, colors as mplotcolors
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from navgridviews.AbstractView import AbstractView
 
 def image_grid_to_raster(image_grid):
@@ -96,9 +97,19 @@ def flatten_to_raster(data):
 
     return flattened, nY, nX
 
-class Raster(AbstractView):
-    def __init__(self, data):
+def get_discrete_cmap(cmap, discrete_levels):
 
+    n_unique = len(np.unique(discrete_levels))
+    norm = mplotcolors.Normalize(vmin=0, vmax=len(discrete_levels))
+    # Leave string colors as it is, convert int colors to
+    # normalized rgba
+    cell_colors = [cmap(norm(val)) for val in discrete_levels]
+    cmap = mplotcolors.ListedColormap(cell_colors, N=n_unique)
+    return cmap
+
+class Raster(AbstractView):
+
+    def __init__(self, data):
         self.data = data
         self.raster, self.nY, self.nX = flatten_to_raster(data)
         self.H, self.W, self.C = self.raster.shape
@@ -116,6 +127,7 @@ class Raster(AbstractView):
 
     def render(self, cmap=cm.viridis, ax=None):
 
+        self.cmap = cmap
         if ax is None:
             if self.ax is None:
                 self.fig, self.ax = plt.subplots(1, 1)
@@ -126,7 +138,6 @@ class Raster(AbstractView):
         return self
 
     def ticks(self, xticks=True, yticks=True, minor=True, coord_sys="rowcol"):
-
         show_minor_ticks = False
         # one image
         if self.nX == 1 and self.nY == 1:
@@ -181,6 +192,16 @@ class Raster(AbstractView):
     def title(self, title):
         self.ax.set_title(title)
         return self
+
+    def colorbar(self, ticks, ticklabels=None, fig=None):
+        if fig is None:
+            fig = self.fig
+        if ticklabels is None:
+            ticklabels = ticks
+        divider = make_axes_locatable(self.ax)
+        self.cb_ax = divider.append_axes('right', size='5%', pad=0.05)
+        self.cbar = fig.colorbar(self.im, ticks=ticks, cax=self.cb_ax)
+        self.cbar.set_ticklabels(ticklabels)
 
     def __call__(self, *args, **kwargs):
         return self.raster
