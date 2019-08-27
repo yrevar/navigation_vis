@@ -132,18 +132,25 @@ class Raster(AbstractView):
         if self.coord_sys == "cartesian":
             self.render_img = self.render_img[::-1]
 
-    def add_trajectory(self, trajectory):
-        x_list, y_list, a_list = [], [], []
+    def add_trajectory(self, trajectory, with_arrow=True):
+        x_list, y_list, _ = [], [], []
         for (x_prime, y_prime, a) in trajectory:
             x, y = self.interpret_coord_sys(x_prime, y_prime)
             x_list.append(x)
-            y_list.append(y)
-        self.draw_path_with_arrows(x_list, y_list)
+            # invert_yaxis has no effect on annotations y coordinates
+            if self.coord_sys == "rowcol":
+                y_list.append(y)
+            else:  # self.coord_sys == "cartesian":
+                y_list.append(self.H - y - 1)
+        if with_arrow:
+            self.draw_path_with_arrows(x_list, y_list)
+        else:
+            self.draw_path(x_list, y_list)
         return self
 
-    def add_trajectories(self, trajectories):
+    def add_trajectories(self, trajectories, with_arrow=True):
         for traj in trajectories:
-            self.add_trajectory(traj)
+            self.add_trajectory(traj, with_arrow)
         return self
 
     def render(self, cmap=cm.viridis):
@@ -159,14 +166,7 @@ class Raster(AbstractView):
             for i in range(len(x_list)-1):
                 x, y = x_list[i], y_list[i]
                 xp, yp = x_list[i+1], y_list[i+1]
-                # invert_yaxis has no effect on annotations y coordinates
-                if self.coord_sys == "rowcol":
-                    star_x, start_y = x, y
-                    end_x, end_y = xp, yp
-                else: # self.coord_sys == "cartesian":
-                    star_x, start_y = x, self.H - y - 1
-                    end_x, end_y = xp, self.H - yp - 1
-                self.ax.annotate("", xy=(end_x, end_y), xytext=(star_x, start_y), arrowprops=dict(arrowstyle="->"))
+                self.ax.annotate("", xy=(xp, yp), xytext=(x, y), arrowprops=dict(arrowstyle="->"))
         return self
 
     def interpret_coord_sys(self, x, y):
