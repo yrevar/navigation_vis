@@ -335,8 +335,8 @@ class Raster(AbstractView):
         self.cbar.set_ticklabels(ticklabels)
         return self
 
-    def show_raster_text(self, fmt=".1f", color_cb=lambda elem: "white"):
-        # Loop over data dimensions and create text annotations.
+    def show_raster_text(self, fmt=".1f", color_cb=lambda elem: "white", fontsize=None):
+        # Loop over data dimensions and add text annotations.
         for y in range(self.H):
             for x in range(self.W):
                 if self.C == 1:
@@ -344,11 +344,11 @@ class Raster(AbstractView):
                 else:
                     text = ", ".join([format(n, fmt) for n in self.get_raster_entry(x, y)])
                 color = color_cb(self.get_raster_entry(x, y))
-                self.ax.text(x, y, text, ha="center", va="center", color=color)
+                self.ax.text(x, y, text, ha="center", va="center", color=color, fontsize=fontsize)
         return self
 
-    def show_cell_text(self, text_lst=None, fmt=".1f", color_cb=lambda elem: "white"):
-        # Loop over data dimensions and create text annotations.
+    def show_cell_text(self, text_lst=None, fmt=".1f", color_cb=lambda elem: "white", fontsize=None):
+        # Loop over cells and add text annotations.
         for yi in range(self.nY):
             for xi in range(self.nX):
                 x, y = self._cell_coord_to_raster_coord(xi, yi)
@@ -364,7 +364,7 @@ class Raster(AbstractView):
                 else:
                     text = text_lst[state_idx]
                     color = color_cb(state_idx)
-                self.ax.text(x, y, text, ha="center", va="center", color=color)
+                self.ax.text(x, y, text, ha="center", va="center", color=color, fontsize=fontsize)
         return self
 
     def __call__(self, *args, **kwargs):
