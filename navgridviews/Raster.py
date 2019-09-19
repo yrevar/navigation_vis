@@ -132,18 +132,11 @@ def get_css4_colors(N, shuffled=False):
 
 class Raster(AbstractView):
 
-    def __init__(self, data, ax=None, coord_sys="colrow"):
-        self.coord_sys = coord_sys
+    def __init__(self, data, ax=None):
         if ax is None:
             self.fig, self.ax = plt.subplots(1, 1)
         else:
             self.ax = ax
-        if self.coord_sys == "colrow":
-            self.x_origin, self.y_origin = 0, 0
-        elif self.coord_sys == "cartesian":
-            self.x_origin, self.y_origin = 1, 1
-        else:
-            raise Exception("coord system {} not supported!".format(self.coord_sys))
         self.update_data(data)
 
     def update_data(self, data):
@@ -152,54 +145,66 @@ class Raster(AbstractView):
         self.H, self.W, self.C = self.raster.shape
         self.Y, self.X = self.H // self.nY, self.W // self.nX  # guaranteed to be ints
         self.render_img = self.raster[:, :, 0] if self.raster.shape[2] == 1 else self.raster
-
-    def _raster_coord_to_cell_coord(self, x, y):
-        yi = y // self.Y
-        xi = x // self.X
-        return xi, yi
+        self.render_img = self.render_img[::-1]
 
     def _cell_coord_to_raster_coord(self, xi, yi, center=True):
-        y = yi * self.Y + (self.Y // 2 if center else 0)
+        y = (self.nY - yi - 1) * self.Y + (self.Y // 2 if center else 0)
         x = xi * self.X + (self.X // 2 if center else 0)
         return x, y
 
     def _cell_coord_to_state_idx(self, xi, yi):
         return yi * self.nX + xi
 
-    def _raster_coord_to_state_idx(self, x, y):
-        xi, yi =self._raster_coord_to_cell_coord(x, y)
-        return self._cell_coord_to_state_idx(xi, yi)
+    def _xi_to_x(self, xi):
+        x = xi * self.X + self.X // 2
+        assert x >= 0 and x < self.W
+        return x
 
-    def add_trajectory(self, trajectory, color='white', with_arrow=True, arrow_props=dict(), traj_coord_raster=False):
+    def _yi_to_y(self, yi):
+        y = yi * self.Y + self.Y // 2
+        assert y >= 0 and y < self.H
+        return y
+
+    def add_pixel_trajectory(self, trajectory, color='white', with_arrow=True, arrow_props=dict()):
         x_list, y_list, a_list = [], [], []
         for (x, y, a) in trajectory:
             x_list.append(x)
             y_list.append(y)
-
-        if traj_coord_raster:
-            x_list = [self._get_cell_xi(xi) for xi in x_list]
-            y_list = [self._get_cell_yi(yi) for yi in y_list]
-        else:
-            x_list = [self._xi_to_x(xi) for xi in x_list]
-            y_list = [self._yi_to_y(yi) for yi in y_list]
-
         if with_arrow:
             self.draw_path_with_arrows(x_list, y_list, color, arrow_props)
         else:
             self.draw_path(x_list, y_list, color)
         return self
 
-    def add_trajectories(self, trajectories, with_arrow=True, arrow_props=dict()):
+    def add_cell_trajectory(self, trajectory, color='white', with_arrow=True, arrow_props=dict()):
+        x_list, y_list, a_list = [], [], []
+        for (x, y, a) in trajectory:
+            x_list.append(x)
+            y_list.append(y)
+        x_list = [self._xi_to_x(xi) for xi in x_list]
+        y_list = [self._yi_to_y(yi) for yi in y_list]
+        if with_arrow:
+            self.draw_path_with_arrows(x_list, y_list, color, arrow_props)
+        else:
+            self.draw_path(x_list, y_list, color)
+        return self
+
+    def add_pixel_trajectories(self, trajectories, with_arrow=True, arrow_props=dict()):
         traj_color_list = get_css4_colors(len(trajectories), True)
         for i, traj in enumerate(trajectories):
-            self.add_trajectory(traj, traj_color_list[i], with_arrow, arrow_props)
+            self.add_pixel_trajectory(traj, traj_color_list[i], with_arrow, arrow_props)
+        return self
+
+    def add_cell_trajectories(self, trajectories, with_arrow=True, arrow_props=dict()):
+        traj_color_list = get_css4_colors(len(trajectories), True)
+        for i, traj in enumerate(trajectories):
+            self.add_cell_trajectory(traj, traj_color_list[i], with_arrow, arrow_props)
         return self
 
     def render(self, cmap=cm.viridis):
         self.cmap = cmap
         self.im = self.ax.imshow(self.render_img, cmap=cmap)
-        if self.coord_sys == "cartesian":
-            self.ax.invert_yaxis()
+        self.ax.invert_yaxis()
         return self
 
     def get_raster_entry(self, x, y):
@@ -215,65 +220,6 @@ class Raster(AbstractView):
                 xp, yp = x_list[i+1], y_list[i+1]
                 self.ax.annotate("", xy=(xp, yp), xytext=(x, y), arrowprops={"color":color, "arrowstyle": "->", **arrow_props})
         return self
-
-    def _get_raster_x(self, x):
-        if self.coord_sys == "colrow":
-            return x
-        elif self.coord_sys == "cartesian":
-            return x - 1
-        else:
-            raise Exception("coord system {} not supported!".format(self.coord_sys))
-
-    def _get_raster_y(self, y, invert_y_not_required=True):
-        # invert_yaxis has no effect on annotations y coordinates
-        if self.coord_sys == "colrow":
-            return y
-        elif self.coord_sys == "cartesian":
-            if invert_y_not_required:
-                return y - 1
-            else:
-                return self.H - (y - 1) - 1
-        else:
-            raise Exception("coord system {} not supported!".format(self.coord_sys))
-
-    def coord_sys_to_raster_coord(self, x, y):
-        return self._get_raster_x(x), self._get_raster_y(y)
-
-    def _xi_to_x(self, xi, interpret_coord_sys=True):
-        if interpret_coord_sys:
-            xi = self._get_cell_xi(xi)
-        x = xi * self.X + self.X // 2
-        assert x >= 0 and x < self.W
-        return x
-
-    def _yi_to_y(self, yi, interpret_coord_sys=True):
-        if interpret_coord_sys:
-            yi = self._get_cell_yi(yi)
-        y = yi * self.Y + self.Y // 2
-        assert y >= 0 and y < self.H
-        return y
-
-    def _get_cell_xi(self, xi):
-        if self.coord_sys == "colrow":
-            return xi
-        elif self.coord_sys == "cartesian":
-            return xi - 1
-        else:
-            raise Exception("coord system {} not supported!".format(self.coord_sys))
-
-    def _get_cell_yi(self, yi, invert_y_not_required=True):
-        if self.coord_sys == "colrow":
-            return yi
-        elif self.coord_sys == "cartesian":
-            if invert_y_not_required:
-                return yi - 1
-            else:
-                return self.nY - (yi - 1) - 1
-        else:
-            raise Exception("coord system {} not supported!".format(self.coord_sys))
-
-    def coord_sys_to_cell_coord(self, xi, yi):
-        self._get_cell_xi(xi), self._get_cell_yi(yi)
 
     def ticks(self, xticks=True, yticks=True, minor=True):
         show_minor_ticks = False
@@ -294,7 +240,7 @@ class Raster(AbstractView):
         if xticks:
             # set major ticks
             self.ax.set_xticks(xtick_locs, minor=False)
-            self.ax.set_xticklabels([str(tick_idx + self.x_origin) for tick_idx, tick_val in enumerate(xtick_locs)], minor=False)
+            self.ax.set_xticklabels([str(tick_idx) for tick_idx, tick_val in enumerate(xtick_locs)], minor=False)
             # set minor ticks
             if minor and show_minor_ticks:
                 self.ax.set_xticks(xminor_tick_locs, minor=True)
@@ -302,7 +248,7 @@ class Raster(AbstractView):
         if yticks:
             # set major ticks
             self.ax.set_yticks(ytick_locs, minor=False)
-            self.ax.set_yticklabels([str(tick_idx + self.y_origin) for tick_idx, tick_val in enumerate(ytick_locs)], minor=False)
+            self.ax.set_yticklabels([str(tick_idx) for tick_idx, tick_val in enumerate(ytick_locs)], minor=False)
             # set minor ticks
             if minor and show_minor_ticks:
                 self.ax.set_yticks(yminor_tick_locs, minor=True)
