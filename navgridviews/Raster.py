@@ -165,7 +165,7 @@ class Raster(AbstractView):
         assert y >= 0 and y < self.H
         return y
 
-    def add_pixel_trajectory(self, trajectory, color='white', with_arrow=True, arrow_props=dict()):
+    def add_pixel_trajectory(self, trajectory, with_arrow=True, arrow_props=dict(), color='white'):
         x_list, y_list, a_list = [], [], []
         for (x, y, a) in trajectory:
             x_list.append(x)
@@ -176,7 +176,7 @@ class Raster(AbstractView):
             self.draw_path(x_list, y_list, color)
         return self
 
-    def add_cell_trajectory(self, trajectory, color='white', with_arrow=True, arrow_props=dict()):
+    def add_trajectory(self, trajectory, with_arrow=True, arrow_props=dict(), color='white'):
         x_list, y_list, a_list = [], [], []
         for (x, y, a) in trajectory:
             x_list.append(x)
@@ -189,16 +189,16 @@ class Raster(AbstractView):
             self.draw_path(x_list, y_list, color)
         return self
 
-    def add_pixel_trajectories(self, trajectories, with_arrow=True, arrow_props=dict()):
+    def add_pixel_trajectories(self, trajectories, with_arrow=True, arrow_props=dict(), color='white'):
         traj_color_list = get_css4_colors(len(trajectories), True)
         for i, traj in enumerate(trajectories):
-            self.add_pixel_trajectory(traj, traj_color_list[i], with_arrow, arrow_props)
+            self.add_pixel_trajectory(traj, with_arrow, arrow_props, traj_color_list[i])
         return self
 
-    def add_cell_trajectories(self, trajectories, with_arrow=True, arrow_props=dict()):
+    def add_trajectories(self, trajectories, with_arrow=True, arrow_props=dict(), color='white'):
         traj_color_list = get_css4_colors(len(trajectories), True)
         for i, traj in enumerate(trajectories):
-            self.add_cell_trajectory(traj, traj_color_list[i], with_arrow, arrow_props)
+            self.add_trajectory(traj, with_arrow, arrow_props, traj_color_list[i])
         return self
 
     def render(self, cmap=cm.viridis):
