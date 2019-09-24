@@ -145,23 +145,19 @@ class Raster(AbstractView):
         self.H, self.W, self.C = self.raster.shape
         self.Y, self.X = self.H // self.nY, self.W // self.nX  # guaranteed to be ints
         self.render_img = self.raster[:, :, 0] if self.raster.shape[2] == 1 else self.raster
-        self.render_img = self.render_img[::-1]
+        # self.render_img = self.render_img[::-1]
+        # self.render_img = np.roll(self.render_img, -1, axis=0)
 
-    def _cell_coord_to_raster_coord(self, xi, yi, center=True):
-        y = (self.nY - yi - 1) * self.Y + (self.Y // 2 if center else 0)
-        x = xi * self.X + (self.X // 2 if center else 0)
-        return x, y
-
-    def _cell_coord_to_state_idx(self, xi, yi):
+    def _cell_coord_to_cell_idx(self, xi, yi):
         return yi * self.nX + xi
 
-    def _xi_to_x(self, xi):
-        x = xi * self.X + self.X // 2
+    def _xi_to_x(self, xi, center=True):
+        x = xi * self.X + (self.X // 2 if center else 0)
         assert x >= 0 and x < self.W
         return x
 
-    def _yi_to_y(self, yi):
-        y = yi * self.Y + self.Y // 2
+    def _yi_to_y(self, yi, center=True):
+        y = yi * self.Y + (self.Y // 2 if center else 0)
         assert y >= 0 and y < self.H
         return y
 
@@ -204,7 +200,7 @@ class Raster(AbstractView):
     def render(self, cmap=cm.viridis):
         self.cmap = cmap
         self.im = self.ax.imshow(self.render_img, cmap=cmap)
-        self.ax.invert_yaxis()
+        # self.ax.invert_yaxis()
         return self
 
     def get_raster_entry(self, x, y):
@@ -290,6 +286,7 @@ class Raster(AbstractView):
                 else:
                     text = ", ".join([format(n, fmt) for n in self.get_raster_entry(x, y)])
                 color = color_cb(self.get_raster_entry(x, y))
+                # ax.text doesn't understand y axis inversion so do it for it
                 self.ax.text(x, y, text, ha="center", va="center", color=color, fontsize=fontsize)
         return self
 
@@ -297,8 +294,8 @@ class Raster(AbstractView):
         # Loop over cells and add text annotations.
         for yi in range(self.nY):
             for xi in range(self.nX):
-                x, y = self._cell_coord_to_raster_coord(xi, yi)
-                state_idx = self._cell_coord_to_state_idx(xi, yi)
+                x, y = self._xi_to_x(xi), self._yi_to_y(yi)
+                state_idx = self._cell_coord_to_cell_idx(xi, yi)
                 if state_idx >= self.n_states:
                     continue
                 if text_lst is None:
@@ -310,6 +307,7 @@ class Raster(AbstractView):
                 else:
                     text = text_lst[state_idx]
                     color = color_cb(state_idx)
+                # ax.text doesn't understand y axis inversion so do it for it
                 self.ax.text(x, y, text, ha="center", va="center", color=color, fontsize=fontsize)
         return self
 
