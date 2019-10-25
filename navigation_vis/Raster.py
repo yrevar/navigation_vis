@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import cm as cm, pyplot as plt, colors as mplotcolors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from navgridviews.AbstractView import AbstractView
+from navigation_vis.AbstractView import AbstractView
 
 def image_grid_to_raster(image_grid):
     """ Converts image grid to RGB raster image.

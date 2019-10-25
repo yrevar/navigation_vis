@@ -2,7 +2,7 @@ import numpy as np
 from collections import namedtuple
 from matplotlib import cm as cm, pyplot as plt, gridspec as gridspec
 from matplotlib.patches import ConnectionPatch
-from navgridviews.AbstractView import AbstractView
+from navigation_vis.AbstractView import AbstractView
 
 
 class GridSpec(AbstractView):
