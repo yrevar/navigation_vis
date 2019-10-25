@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="navigation_vis",
-    version="0.0.1",
+    version="0.0.3",
     author="Yagnesh Revar",
     author_email="mailto.yagnesh+github@gmail.com",
     description="A lightweight library for visualizing navigation grid world",
