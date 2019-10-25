@@ -1,4 +1,5 @@
 import setuptools
+exec(open('navigation_vis/_version.py').read())
 
 # Ref: https://packaging.python.org/tutorials/packaging-projects/
 
@@ -7,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="navigation_vis",
-    version="0.0.3",
+    version=__version__,
     author="Yagnesh Revar",
     author_email="mailto.yagnesh+github@gmail.com",
     description="A lightweight library for visualizing navigation grid world",
