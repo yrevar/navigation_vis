@@ -6,7 +6,7 @@ A simple Python3 interface designed using Matplotlib to visualize high dimension
 If you're curious what it can do:
 
 ### 1. View examples in the notebook
-./navgridviews_raster.ipynb
+[Raster grid view](./navgridviews_raster.ipynb)
 
 ### 2. Play with it on Google Colab
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yrevar/navigation_vis/blob/master/navgridviews_raster.ipynb)
