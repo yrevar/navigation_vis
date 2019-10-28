@@ -1,4 +1,5 @@
 import setuptools
+# versioning style inspired from https://github.com/david-abel/simple_rl/
 exec(open('navigation_vis/_version.py').read())
 
 # Ref: https://packaging.python.org/tutorials/packaging-projects/
