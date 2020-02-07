@@ -100,6 +100,26 @@ def flatten_to_raster(data):
 
     return flattened, nY, nX, n_states
 
+def flip_y_axis(data):
+    """ Flip y-axis of numpy array of various dimensions (e.g., required for cartesian visualization).
+        :param data: numpy array of one of following sizes.
+               1) H x W x C (color/gray image): flip 0th axis
+               2) N x Y x X x C (array of color/gray images): flip 1st axis
+               3) nY x nX x Y x X x C (2d array of color/gray images): flip 2nd axis
+    """
+    n_dim = len(data.shape)
+    if n_dim == 3:
+        # H, W, C = data.shape
+        return np.flip(data, 0)
+    elif n_dim == 4:
+        # N x Y x X x C (array of color/gray images)
+        return np.flip(data, 1)
+    elif n_dim == 5:
+        # nY, nX, Y, X, C = image_grid.shape
+        return np.flip(data, 2)
+    else:
+        raise Exception("data dimension {} not supported!".format(n_dim))
+
 def get_discrete_cmap(cmap, discrete_levels):
 
     n_unique = len(np.unique(discrete_levels))
@@ -134,9 +154,10 @@ class Raster(AbstractView):
 
     def __init__(self, data, ax=None):
         if ax is None:
-            self.fig, self.ax = plt.subplots(1, 1)
+            self.fig, self.ax = plt.gcf(), plt.gca()
         else:
             self.ax = ax
+            self.fig = plt.gcf()
         self.update_data(data)
 
     def update_data(self, data):
@@ -266,15 +287,14 @@ class Raster(AbstractView):
         self.ax.set_title(title)
         return self
 
-    def colorbar(self, ticks, ticklabels=None, fig=None):
-        if fig is None:
-            fig = self.fig
+    def colorbar(self, ticks=None, ticklabels=None, pad=0.05, size='5%', where='right'):
         if ticklabels is None:
             ticklabels = ticks
         divider = make_axes_locatable(self.ax)
-        self.cb_ax = divider.append_axes('right', size='5%', pad=0.05)
-        self.cbar = fig.colorbar(self.im, ticks=ticks, cax=self.cb_ax)
-        self.cbar.set_ticklabels(ticklabels)
+        self.cb_ax = divider.append_axes(where, size=size, pad=pad)
+        self.cbar = plt.colorbar(self.im, ticks=ticks, cax=self.cb_ax)
+        if ticklabels is not None:
+            self.cbar.set_ticklabels(ticklabels)
         return self
 
     def show_raster_text(self, fmt=".1f", color_cb=lambda elem: "white", fontsize=None):

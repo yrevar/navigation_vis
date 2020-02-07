@@ -2,6 +2,20 @@
 
 A simple Python3 interface designed using Matplotlib to visualize high dimensional data. It's designed specifically for 2D navigation grid world, however the interface can also be used to visualize any kind of data that can be represented in a 2D grid.
 
+
+## Installation
+
+To install current release with [pip](https://pypi.python.org/pypi/pip):
+
+    pip install navigation-vis
+
+
+To install from source:
+
+    python setup.py install
+
+
+
 ## Usage
 If you're curious what it can do:
 
