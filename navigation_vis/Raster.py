@@ -218,9 +218,9 @@ class Raster(AbstractView):
             self.add_trajectory(traj, with_arrow, arrow_props, traj_color_list[i])
         return self
 
-    def render(self, cmap=cm.viridis):
+    def render(self, cmap=cm.viridis, aspect='auto'):
         self.cmap = cmap
-        self.im = self.ax.imshow(self.render_img, cmap=cmap)
+        self.im = self.ax.imshow(self.render_img, cmap=cmap, aspect=aspect)
         # self.ax.invert_yaxis()
         return self
 
