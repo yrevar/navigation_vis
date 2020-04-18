@@ -184,7 +184,8 @@ class Raster(AbstractView):
 
     def add_pixel_trajectory(self, trajectory, with_arrow=True, arrow_props=dict(), color='white'):
         x_list, y_list, a_list = [], [], []
-        for (x, y, a) in trajectory:
+        for traj in trajectory:
+            x, y = traj[0], traj[1]
             x_list.append(x)
             y_list.append(y)
         if with_arrow:
@@ -195,7 +196,8 @@ class Raster(AbstractView):
 
     def add_trajectory(self, trajectory, with_arrow=True, arrow_props=dict(), color='white'):
         x_list, y_list, a_list = [], [], []
-        for (x, y, a) in trajectory:
+        for traj in trajectory:
+            x, y = traj[0], traj[1]
             x_list.append(x)
             y_list.append(y)
         x_list = [self._xi_to_x(xi) for xi in x_list]
@@ -206,14 +208,30 @@ class Raster(AbstractView):
             self.draw_path(x_list, y_list, color)
         return self
 
-    def add_pixel_trajectories(self, trajectories, with_arrow=True, arrow_props=dict(), color='white'):
-        traj_color_list = get_css4_colors(len(trajectories), True)
+    def add_pixel_trajectories(self, trajectories, with_arrow=True, arrow_props=dict(), colors=None):
+        if colors is None:
+            traj_color_list = get_css4_colors(len(trajectories), True)
+        else:
+            if not isinstance(colors, list) and isinstance(colors, str):
+                traj_color_list = [colors] * len(trajectories)
+            elif isinstance(colors, list):
+                traj_color_list = colors
+            else:
+                raise Exception("Invalid arg: colors")
         for i, traj in enumerate(trajectories):
             self.add_pixel_trajectory(traj, with_arrow, arrow_props, traj_color_list[i])
         return self
 
-    def add_trajectories(self, trajectories, with_arrow=True, arrow_props=dict(), color='white'):
-        traj_color_list = get_css4_colors(len(trajectories), True)
+    def add_trajectories(self, trajectories, with_arrow=True, arrow_props=dict(), colors=None):
+        if colors is None:
+            traj_color_list = get_css4_colors(len(trajectories), True)
+        else:
+            if not isinstance(colors, list) and isinstance(colors, str):
+                traj_color_list = [colors] * len(trajectories)
+            elif isinstance(colors, list):
+                traj_color_list = colors
+            else:
+                raise Exception("Invalid arg: colors")
         for i, traj in enumerate(trajectories):
             self.add_trajectory(traj, with_arrow, arrow_props, traj_color_list[i])
         return self
@@ -293,6 +311,8 @@ class Raster(AbstractView):
         divider = make_axes_locatable(self.ax)
         self.cb_ax = divider.append_axes(where, size=size, pad=pad)
         self.cbar = plt.colorbar(self.im, ticks=ticks, cax=self.cb_ax)
+        # self.ax.yaxis.set_label_position(where)
+        # self.ax.yaxis.set_label_position(where)
         if ticklabels is not None:
             self.cbar.set_ticklabels(ticklabels)
         return self
