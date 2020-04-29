@@ -236,9 +236,9 @@ class Raster(AbstractView):
             self.add_trajectory(traj, with_arrow, arrow_props, traj_color_list[i])
         return self
 
-    def render(self, cmap=cm.viridis, aspect='auto'):
+    def render(self, cmap=cm.viridis, aspect='auto', **kwargs):
         self.cmap = cmap
-        self.im = self.ax.imshow(self.render_img, cmap=cmap, aspect=aspect)
+        self.im = self.ax.imshow(self.render_img, cmap=cmap, aspect=aspect, **kwargs)
         # self.ax.invert_yaxis()
         return self
 
@@ -294,11 +294,13 @@ class Raster(AbstractView):
         self.ax.tick_params(which='minor', length=2, color='black')
         return self
 
-    def grid(self, major=True, minor=False):
+    def grid(self, major=True, minor=False,
+             major_parms={"linestyle": "-", "linewidth": "1", "color": "red"},
+             minor_params={"linestyle": ":", "linewidth": "0.3", "color": "black"}):
         if major:
-            self.ax.grid(which='major', linestyle='-', linewidth='1', color='red')
+            self.ax.grid(which='major', **major_parms)
         if minor:
-            self.ax.grid(which='minor', linestyle=':', linewidth='0.3', color='black')
+            self.ax.grid(which='minor', **minor_params)
         return self
 
     def title(self, title):
