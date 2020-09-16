@@ -1,5 +1,5 @@
 import numpy as np
-from matplotlib import cm as cm, pyplot as plt, colors as mplotcolors
+from matplotlib import cm as cm, pyplot as plt, colors as mplotcolors, patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from navigation_vis.AbstractView import AbstractView
 
@@ -330,6 +330,18 @@ class Raster(AbstractView):
                 color = color_cb(self.get_raster_entry(x, y))
                 # ax.text doesn't understand y axis inversion so do it for it
                 self.ax.text(x, y, text, ha="center", va="center", color=color, fontsize=fontsize)
+        return self
+
+    def highlight_cells(self, linewidth=4, edgecolor=lambda idx: "g", facecolor="none", alpha=0.2, **kwargs):
+        for yi in range(0,self.nY,1):
+            for xi in range(0,self.nX,1):
+                x, y = self._xi_to_x(xi), self._yi_to_y(yi)
+                idx = self._cell_coord_to_cell_idx(xi, yi)
+                rect = patches.Rectangle(
+                    (xi*self.data.shape[2], yi*self.data.shape[1]),
+                    self.data.shape[2], self.data.shape[1],
+                    linewidth=linewidth, edgecolor=edgecolor(idx), facecolor=facecolor, alpha=alpha, **kwargs)
+                self.ax.add_patch(rect)
         return self
 
     def show_cell_text(self, text_lst=None, fmt=".1f", color_cb=lambda elem: "white", fontsize=None):
