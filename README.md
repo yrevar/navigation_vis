@@ -34,4 +34,4 @@ If you're curious what it can do:
     
 
 ### 3. Play with it on MyBinder
-[![Binder](https://mybinder.org/v2/gh/yrevar/navigation_vis/HEAD)]
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/yrevar/navigation_vis/HEAD)
